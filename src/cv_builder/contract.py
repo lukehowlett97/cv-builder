@@ -14,7 +14,7 @@ REQUIRED_METADATA = ("name", "headline", "location", "email")
 SECTION_ALIASES: dict[str, set[str]] = {
     "profile": {"profile", "summary", "personal profile"},
     "experience": {"experience", "professional experience", "work experience", "employment history"},
-    "skills": {"skills", "core capabilities", "technical skills", "technical experience"},
+    "skills": {"skills", "core skills", "core capabilities", "technical skills", "technical experience"},
     "education": {"education", "qualifications"},
 }
 

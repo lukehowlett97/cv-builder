@@ -10,6 +10,7 @@ from cv_builder.build import (
     default_config,
     read_input_markdown,
     resolve_output_name,
+    resolve_markdown_with_metadata,
 )
 from cv_builder.render import RenderError
 
@@ -45,7 +46,10 @@ def main(argv: list[str] | None = None) -> int:
     config: BuildConfig = default_config(args.project_root.resolve())
 
     try:
-        markdown = read_input_markdown(config.input_path, config.input_template_path)
+        markdown = resolve_markdown_with_metadata(
+            read_input_markdown(config.input_path, config.example_input_path),
+            config.metadata_path,
+        )
         suggested, _ = resolve_output_name(markdown, args.name)
         chosen_name = choose_output_name(args, suggested)
         result = build_cv(config, chosen_name, dry_run=args.dry_run)
@@ -63,6 +67,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Run directory: {result.run_dir}")
         print(f"Markdown output: {result.markdown_path}")
         print(f"PDF output: {result.pdf_path}")
+        if result.cover_docx_path:
+            print(f"Cover DOCX output: {result.cover_docx_path}")
         return 0
 
     print("Build successful.")
@@ -70,7 +76,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Run directory: {result.run_dir}")
     print(f"Markdown snapshot: {result.markdown_path}")
     print(f"PDF output: {result.pdf_path}")
-    print(f"Cleared input file: {config.input_path}")
+    if result.cover_docx_path:
+        print(f"Cover DOCX output: {result.cover_docx_path}")
+    print(f"Input file left unchanged: {config.input_path}")
     return 0
 
 
