@@ -1,6 +1,6 @@
 ---
 name: Example Candidate
-headline: GNSS / PNT Engineer | Python, Receiver Testing, RTCM, RINEX, PPP/SSR & Real-Time Positioning Systems
+headline: Data & Systems Engineer | Python, SQL, Production Operations
 location: City, Country
 email: email@example.com
 website: "www.example.com"
@@ -15,19 +15,19 @@ Experienced in turning complex GNSS data into reliable engineering evidence: des
 
 ## Professional experience
 
-### GNSS Software & Data Engineering Contractor  
+### Software & Data Engineering Contractor  
 **Example Company** — Remote / UK  
 *2025 – Present*
 
-- Built and supported real-time GNSS correction processing workflows involving RTCM3, SSR-style messages, YYC files, receiver streams, cloud storage, queue-based processing and automated downstream delivery.
+- Built and supported real-time data-processing workflows involving structured messages, receiver streams, cloud storage, queue-based processing and automated downstream delivery.
 - Developed Python tooling for quality control, data comparison and performance reporting, including daily comparison pipelines against reference products and structured Excel/JSON outputs for engineering review.
 - Investigated complex live-system issues across ingestion, decoding, encoding, transmission and post-transport services, using logs, message epochs, stream health summaries and data artefacts to isolate failure modes.
 - Worked with AWS services including Lambda, S3, SQS, EC2, ECR and CloudWatch to deploy, operate and debug GNSS processing systems in production-like environments.
 - Used Docker, Terraform, Git and Linux-based workflows to support reproducible deployments, containerised services and controlled infrastructure changes.
 - Collaborated with senior engineers and stakeholders to explain technical risks, diagnose operational issues and convert raw GNSS behaviour into actionable engineering decisions.
 
-### GNSS Data Analyst / Research Engineer  
-**GNSS / Positioning Technology Company** — UK  
+### Data Analyst / Research Engineer  
+**Example Technology Company** — UK  
 *Previous role*
 
 - Analysed GNSS residuals, satellite correction data and receiver-derived outputs to identify stability, convergence, noise, jumps, spikes and other anomalous behaviours.

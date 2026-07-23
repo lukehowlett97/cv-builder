@@ -48,6 +48,7 @@ def ensure_docx_dependencies(paths: DocxRenderPaths) -> None:
 
 
 def render_pdf(paths: RenderPaths) -> None:
+    lua_filter = paths.template_path.parent / "multicol-core-capabilities.lua"
     command = [
         "pandoc",
         str(paths.input_path),
@@ -55,6 +56,7 @@ def render_pdf(paths: RenderPaths) -> None:
         str(paths.output_pdf),
         "--pdf-engine=xelatex",
         f"--template={paths.template_path}",
+        f"--lua-filter={lua_filter}",
     ]
     result = subprocess.run(command, capture_output=True, text=True, check=False)
     if result.returncode != 0:

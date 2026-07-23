@@ -12,6 +12,15 @@ build/
 runs/
 !runs/.gitkeep
 
+# Local application material and generated documents
+input.md
+input/metadata.yml
+cover_input.txt
+output/
+*.docx
+*.pdf
+*.docx_Zone.Identifier
+
 *.aux
 *.fdb_latexmk
 *.fls

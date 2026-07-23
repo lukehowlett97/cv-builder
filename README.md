@@ -1,6 +1,6 @@
 # cv-builder
 
-This repository now contains a dedicated local CV workflow alongside the older report/document build targets.
+A local Markdown-to-PDF CV builder using Pandoc, XeLaTeX, and a custom LaTeX template.
 
 The CV workflow is designed for editing a single root-level `input.md`, then generating named snapshots into `runs/`:
 
@@ -31,12 +31,12 @@ The builder will:
 - suggest a filename from the first `# H1`
 - prompt with `Output name [suggested-name]:`
 - write `runs/<name>.md` and `runs/<name>.pdf`
-- render `cover_input.txt` to `runs/<name>-cover.docx` when `cover_input.txt` exists
+- optionally render a local `cover_input.txt` to `runs/<name>-cover.docx`
 - leave `input.md` unchanged after the build
 
 If `input.md` is missing, the builder creates it from `example_input.md`.
 
-Edit the root `cover_input.txt` for the cover letter or supporting statement that should be emitted as a Word document alongside the CV.
+An optional local `cover_input.txt` can be used for a cover letter or supporting statement. It is ignored by Git.
 
 If no H1 is present, the fallback name is `cv-YYYY-MM-DD`.
 
@@ -85,25 +85,19 @@ This template is the styling layer for the generated PDF. It can be adjusted to 
 
 ```text
 .
-├── input.md
-├── cover_input.txt
 ├── example_input.md
 ├── runs/
 ├── src/cv_builder/
 ├── tex/cv-template.tex
 ├── build_cv.sh
 ├── Makefile
-└── legacy report/docx scripts and assets
+└── LICENSE
 ```
 
-The older report build commands remain available in the `Makefile` and are intentionally left in place.
+## Privacy
 
-## Git Guidance
+Personal CVs, cover letters, metadata, generated documents, and application-specific material are intentionally excluded from version control. Copy `example_input.md` to a local `input.md` and customise it privately.
 
-Recommended initial commit once you are happy with the merge:
+## License
 
-```bash
-git init
-git add .
-git commit -m "Add cv-builder workflow and preserve legacy document targets"
-```
+The source code and template are released under the MIT License. See [LICENSE](LICENSE).
