@@ -5,6 +5,7 @@ location: City, Country
 email: email@example.com
 website: "www.example.com"
 linkedin: "https://www.linkedin.com/in/example/"
+github: "https://github.com/example"
 ---
 
 ## Profile

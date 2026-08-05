@@ -10,6 +10,14 @@ FRONTMATTER_KEY_PATTERN = re.compile(r"^([A-Za-z0-9_-]+)\s*:\s*(.+?)\s*$")
 SECTION_PATTERN = re.compile(r"^\s*##\s+(.+?)\s*$", re.MULTILINE)
 
 REQUIRED_METADATA = ("name", "headline", "location", "email")
+LAYOUT_BOOLEAN_FIELD = "layout_keep_headings_with_content"
+LAYOUT_NEEDSPACE_FIELDS = (
+    "layout_h2_needspace",
+    "layout_h2_before_h3_needspace",
+    "layout_h3_needspace",
+)
+MIN_NEEDSPACE = 1
+MAX_NEEDSPACE = 30
 
 SECTION_ALIASES: dict[str, set[str]] = {
     "profile": {"profile", "summary", "personal profile"},
@@ -71,6 +79,30 @@ def _check_sections(body: str) -> None:
         )
 
 
+def _check_layout_metadata(metadata: dict[str, str]) -> None:
+    enabled = metadata.get(LAYOUT_BOOLEAN_FIELD)
+    if enabled is not None and enabled.lower() not in {"true", "false"}:
+        raise RenderError(
+            f"Invalid {LAYOUT_BOOLEAN_FIELD}: expected true or false"
+        )
+
+    for field in LAYOUT_NEEDSPACE_FIELDS:
+        value = metadata.get(field)
+        if value is None:
+            continue
+        if not re.fullmatch(r"[0-9]+", value):
+            raise RenderError(
+                f"Invalid {field}: expected an integer from "
+                f"{MIN_NEEDSPACE} to {MAX_NEEDSPACE}"
+            )
+        parsed = int(value)
+        if not MIN_NEEDSPACE <= parsed <= MAX_NEEDSPACE:
+            raise RenderError(
+                f"Invalid {field}: expected an integer from "
+                f"{MIN_NEEDSPACE} to {MAX_NEEDSPACE}"
+            )
+
+
 def validate_markdown_contract(markdown: str) -> dict[str, str]:
     metadata, body = parse_frontmatter(markdown)
 
@@ -81,6 +113,7 @@ def validate_markdown_contract(markdown: str) -> dict[str, str]:
     if not body.strip():
         raise RenderError("CV body is empty after frontmatter")
 
+    _check_layout_metadata(metadata)
     _check_sections(body)
 
     return metadata

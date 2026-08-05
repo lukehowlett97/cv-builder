@@ -29,6 +29,14 @@ local function heading_text(blocks)
 end
 
 function Pandoc(doc)
+  if doc.meta.website ~= nil then
+    local website = pandoc.utils.stringify(doc.meta.website)
+    if not website:match("^[%a][%w+.-]*://") then
+      website = "https://" .. website
+    end
+    doc.meta.website_url = pandoc.MetaString(website)
+  end
+
   local blocks = doc.blocks
   local new_blocks = {}
   local i = 1

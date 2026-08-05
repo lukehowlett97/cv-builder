@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -138,16 +139,45 @@ def resolve_cover_docx_path(cover_input_path: Path, markdown_output: Path) -> Pa
     return markdown_output.with_name(f"{markdown_output.stem}-cover.docx")
 
 
-def build_cv(config: BuildConfig, output_name: str | None, dry_run: bool = False) -> BuildResult:
-    markdown = resolve_markdown_with_metadata(
-        read_input_markdown(config.input_path, config.example_input_path),
-        config.metadata_path,
-    )
+def resolve_cover_docx_path_from_text(cover_text: str | None, markdown_output: Path) -> Path | None:
+    if not cover_text or not cover_text.strip():
+        return None
+    return markdown_output.with_name(f"{markdown_output.stem}-cover.docx")
+
+
+def _render_cover_docx(config: BuildConfig, cover_text: str | None, cover_docx_output: Path) -> None:
+    if cover_text is not None:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False, encoding="utf-8") as f:
+            f.write(cover_text)
+            cover_input = Path(f.name)
+        try:
+            docx_paths = DocxRenderPaths(cover_input, cover_docx_output)
+            ensure_docx_dependencies(docx_paths)
+            render_docx(docx_paths)
+        finally:
+            cover_input.unlink(missing_ok=True)
+    else:
+        docx_paths = DocxRenderPaths(config.cover_input_path, cover_docx_output)
+        ensure_docx_dependencies(docx_paths)
+        render_docx(docx_paths)
+
+
+def build_cv_from_content(
+    config: BuildConfig,
+    markdown: str,
+    output_name: str | None = None,
+    cover_text: str | None = None,
+    dry_run: bool = False,
+) -> BuildResult:
+    markdown = resolve_markdown_with_metadata(markdown, config.metadata_path)
     metadata = validate_markdown_contract(markdown)
     _, final_name = resolve_output_name(markdown, output_name)
 
     run_dir, markdown_output, pdf_output = resolve_run_artifact_paths(config.runs_dir, final_name)
-    cover_docx_output = resolve_cover_docx_path(config.cover_input_path, markdown_output)
+    if cover_text is not None:
+        cover_docx_output = resolve_cover_docx_path_from_text(cover_text, markdown_output)
+    else:
+        cover_docx_output = resolve_cover_docx_path(config.cover_input_path, markdown_output)
 
     if dry_run:
         return BuildResult(
@@ -166,9 +196,7 @@ def build_cv(config: BuildConfig, output_name: str | None, dry_run: bool = False
         ensure_dependencies(paths)
         render_pdf(paths)
         if cover_docx_output is not None:
-            docx_paths = DocxRenderPaths(config.cover_input_path, cover_docx_output)
-            ensure_docx_dependencies(docx_paths)
-            render_docx(docx_paths)
+            _render_cover_docx(config, cover_text, cover_docx_output)
     except Exception:
         if markdown_output.exists():
             markdown_output.unlink()
@@ -187,3 +215,8 @@ def build_cv(config: BuildConfig, output_name: str | None, dry_run: bool = False
         cleared_input=False,
         metadata=metadata,
     )
+
+
+def build_cv(config: BuildConfig, output_name: str | None, dry_run: bool = False) -> BuildResult:
+    markdown = read_input_markdown(config.input_path, config.example_input_path)
+    return build_cv_from_content(config, markdown, output_name, dry_run=dry_run)

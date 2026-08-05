@@ -12,6 +12,7 @@ Required front matter fields:
 Optional front matter fields:
 - linkedin
 - website
+- github
 
 The CV builder expects these main Markdown sections:
 - ## Profile
@@ -22,6 +23,9 @@ The CV builder expects these main Markdown sections:
 It can also include:
 - ## Key Projects
 - ## Additional information
+
+The PDF template renders `github` and `website` as GitHub and Portfolio links
+in the page footer. Do not repeat those links in `## Additional information`.
 
 Use this exact structure. Keep the output as raw Markdown only, with no explanation before or after it.
 
@@ -34,6 +38,7 @@ location: City, Country
 email: email@example.com
 linkedin: "https://www.linkedin.com/in/example/"
 website: "www.example.com"
+github: "https://github.com/example"
 ---
 
 ## Profile
