@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -18,6 +19,8 @@ from cv_builder.build import (
 from cv_builder.render import RenderError
 from cv_builder.web import (
     WebError,
+    _open_in_file_manager,
+    _running_under_wsl,
     _safe_relative_path,
     _validate_cover_text,
     _validate_markdown,
@@ -272,6 +275,54 @@ class SafePathTests(unittest.TestCase):
         with self.assertRaises(WebError) as ctx:
             _safe_relative_path(self.config, "missing.pdf")
         self.assertEqual(ctx.exception.status, 404)
+
+
+class FileManagerTests(unittest.TestCase):
+    def test_wsl_interop_environment_is_detected(self) -> None:
+        with mock.patch.dict("cv_builder.web.os.environ", {"WSL_INTEROP": "1"}, clear=True):
+            self.assertTrue(_running_under_wsl())
+
+    def test_wsl_proc_version_is_detected(self) -> None:
+        with (
+            mock.patch.dict("cv_builder.web.os.environ", {}, clear=True),
+            mock.patch("cv_builder.web.Path.read_text", return_value="Linux Microsoft WSL2"),
+        ):
+            self.assertTrue(_running_under_wsl())
+
+    def test_wsl_uses_windows_path_with_explorer(self) -> None:
+        output_path = Path("/tmp/cv-builder/runs/example")
+        with (
+            mock.patch("cv_builder.web._running_under_wsl", return_value=True),
+            mock.patch("cv_builder.web.shutil.which", return_value="/mnt/c/Windows/explorer.exe"),
+            mock.patch(
+                "cv_builder.web.subprocess.check_output",
+                return_value="C:\\tmp\\cv-builder\\runs\\example\n",
+            ) as mock_check_output,
+            mock.patch("cv_builder.web.subprocess.Popen") as mock_popen,
+        ):
+            _open_in_file_manager(output_path)
+
+        mock_check_output.assert_called_once_with(
+            ["wslpath", "-w", str(output_path)],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        )
+        mock_popen.assert_called_once_with(
+            ["/mnt/c/Windows/explorer.exe", "C:\\tmp\\cv-builder\\runs\\example"],
+            cwd="/mnt/c/Windows",
+        )
+
+    def test_linux_uses_xdg_open(self) -> None:
+        output_path = Path("/tmp/cv-builder/runs/example")
+        with (
+            mock.patch("cv_builder.web.os.name", "posix"),
+            mock.patch("cv_builder.web.sys.platform", "linux"),
+            mock.patch("cv_builder.web._running_under_wsl", return_value=False),
+            mock.patch("cv_builder.web.subprocess.Popen") as mock_popen,
+        ):
+            _open_in_file_manager(output_path)
+
+        mock_popen.assert_called_once_with(["xdg-open", str(output_path)])
 
 
 class WebServerTests(unittest.TestCase):
