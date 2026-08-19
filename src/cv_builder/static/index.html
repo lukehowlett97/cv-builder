@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CV Builder</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1>CV Builder</h1>
+    <div id="status-badge" class="status-badge status-checking">Checking dependencies…</div>
+  </header>
+
+  <main class="app-main" id="app-main">
+    <section class="panel input-panel" id="input-panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Build a CV</h2>
+          <p class="panel-subtitle">Generate a PDF and optional cover letter from Markdown.</p>
+        </div>
+        <button id="focus-preview-btn" class="btn btn-ghost" type="button" title="Hide the editor to focus on the preview">Focus preview</button>
+      </div>
+
+      <div class="field">
+        <label for="output-name">Output name</label>
+        <input type="text" id="output-name" placeholder="e.g. software-engineer-cv" autocomplete="off">
+        <p class="field-hint">Used for the run directory and file names.</p>
+      </div>
+
+      <details class="collapsible-section options-section" id="header-options-section">
+        <summary>
+          <span>Header options</span>
+          <span class="optional-tag">Frontmatter</span>
+        </summary>
+        <div class="collapsible-body">
+          <p class="section-hint">These fields update the YAML frontmatter in the Markdown editor.</p>
+          <div class="options-grid">
+            <div class="field">
+              <label for="header-name">Name</label>
+              <input type="text" id="header-name" data-frontmatter-key="name" autocomplete="name">
+            </div>
+            <div class="field">
+              <label for="header-location">Location</label>
+              <input type="text" id="header-location" data-frontmatter-key="location" autocomplete="address-level2">
+            </div>
+            <div class="field options-grid-wide">
+              <label for="header-headline">Headline</label>
+              <input type="text" id="header-headline" data-frontmatter-key="headline">
+            </div>
+            <div class="field">
+              <label for="header-email">Email</label>
+              <input type="email" id="header-email" data-frontmatter-key="email" autocomplete="email">
+            </div>
+            <div class="field">
+              <label for="header-website">Website</label>
+              <input type="url" id="header-website" data-frontmatter-key="website" placeholder="https://example.com" autocomplete="url">
+            </div>
+            <div class="field">
+              <label for="header-linkedin">LinkedIn</label>
+              <input type="url" id="header-linkedin" data-frontmatter-key="linkedin" placeholder="https://www.linkedin.com/in/…">
+            </div>
+            <div class="field">
+              <label for="header-github">GitHub</label>
+              <input type="url" id="header-github" data-frontmatter-key="github" placeholder="https://github.com/…">
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <div class="field">
+        <div class="field-label-row">
+          <label for="cv-markdown">CV Markdown</label>
+          <div class="editor-actions">
+            <button id="load-file-btn" class="btn btn-small" type="button">Load Markdown file</button>
+            <button id="use-sample-btn" class="btn btn-small" type="button">Use sample</button>
+            <button id="pull-preview-btn" class="btn btn-small" type="button" disabled>Pull from preview</button>
+            <button id="clear-btn" class="btn btn-small" type="button">Clear</button>
+          </div>
+        </div>
+        <input type="file" id="markdown-file-input" accept=".md,.markdown,text/markdown,text/plain" class="hidden">
+        <textarea id="cv-markdown" rows="14" spellcheck="false" placeholder="Paste your CV Markdown here (with YAML frontmatter)…"></textarea>
+        <p class="field-hint">Must include YAML frontmatter with <code>name</code>, <code>headline</code>, <code>location</code>, and <code>email</code>.</p>
+      </div>
+
+      <details class="collapsible-section cover-letter-section" id="cover-letter-section">
+        <summary>
+          <span>Add cover letter</span>
+          <span class="optional-tag">Optional</span>
+        </summary>
+        <div class="collapsible-body cover-letter-body">
+          <textarea id="cover-text" rows="6" spellcheck="false" placeholder="Paste cover letter text here to also generate a DOCX…"></textarea>
+          <p class="field-hint">Leave empty to skip cover-letter generation.</p>
+        </div>
+      </details>
+
+      <div class="actions">
+        <button id="generate-btn" class="btn btn-primary" disabled>Generate CV</button>
+        <span id="processing-indicator" class="processing-indicator hidden">Generating…</span>
+      </div>
+
+      <div id="error-box" class="error-box hidden" role="alert"></div>
+    </section>
+
+    <section class="panel output-panel" id="output-panel">
+      <div class="panel-heading">
+        <h2>Output</h2>
+        <button id="restore-editor-btn" class="btn btn-ghost hidden" type="button" title="Show the editor again">Show editor</button>
+      </div>
+
+      <div class="tabs">
+        <div class="tabs-primary">
+          <button id="tab-preview-btn" class="tab-btn active" type="button">Preview</button>
+          <button id="tab-files-btn" class="tab-btn" type="button">Generated files</button>
+        </div>
+        <div id="preview-format-toggle" class="preview-format-toggle" aria-label="Preview format">
+          <button id="preview-markdown-btn" class="format-btn" type="button" aria-pressed="false" disabled>Markdown</button>
+          <button id="preview-pdf-btn" class="format-btn active" type="button" aria-pressed="true" disabled>PDF</button>
+        </div>
+      </div>
+
+      <div id="tab-preview" class="tab-panel">
+        <div id="preview-empty" class="preview-empty">
+          <p>No output generated yet.</p>
+          <p class="preview-empty-hint">Fill in the editor and press <strong>Generate CV</strong> to create your Markdown and PDF.</p>
+        </div>
+        <div id="preview-container" class="preview-container hidden">
+          <div class="preview-toolbar">
+            <span id="preview-label" class="preview-label"></span>
+            <div class="preview-toolbar-actions">
+              <a id="open-preview-btn" class="btn btn-small" href="#" target="_blank" rel="noopener">Open PDF in new tab</a>
+              <button id="open-output-btn" class="btn btn-small" type="button">Open in folder</button>
+              <button id="copy-markdown-btn" class="btn btn-small hidden" type="button">Copy to clipboard</button>
+            </div>
+          </div>
+          <iframe id="pdf-preview" title="PDF preview"></iframe>
+          <pre id="markdown-preview" class="markdown-preview hidden" aria-label="Markdown preview"></pre>
+        </div>
+      </div>
+
+      <div id="tab-files" class="tab-panel hidden">
+        <div id="files-tree" class="files-tree">
+          <p class="files-loading">Loading files…</p>
+        </div>
+      </div>
+
+      <div id="result-box" class="result-box hidden">
+        <div class="result-summary">
+          <h3>Generated successfully</h3>
+          <p id="result-timestamp" class="result-timestamp"></p>
+          <ul id="result-files" class="result-files"></ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

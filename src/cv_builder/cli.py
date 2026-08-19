@@ -7,6 +7,7 @@ from pathlib import Path
 from cv_builder.build import (
     BuildConfig,
     build_cv,
+    build_pdf_from_file,
     default_config,
     read_input_markdown,
     resolve_output_name,
@@ -19,6 +20,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build a polished PDF CV from Markdown.")
     parser.add_argument("--name", help="Bypass the interactive output-name prompt.")
     parser.add_argument("--dry-run", action="store_true", help="Resolve output paths without writing files.")
+    parser.add_argument(
+        "--input",
+        type=Path,
+        help="Build this Markdown CV directly instead of using the root input.md workflow.",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="PDF path for --input (defaults to cv.pdf beside the input file).",
+    )
     parser.add_argument(
         "--project-root",
         type=Path,
@@ -45,7 +56,24 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     config: BuildConfig = default_config(args.project_root.resolve())
 
+    if args.output and not args.input:
+        print("Error: --output requires --input", file=sys.stderr)
+        return 2
+    if args.input and (args.name or args.dry_run):
+        print("Error: --input cannot be combined with --name or --dry-run", file=sys.stderr)
+        return 2
+
     try:
+        if args.input:
+            input_path = args.input.resolve()
+            output_path = (args.output or input_path.with_name("cv.pdf")).resolve()
+            metadata = build_pdf_from_file(config, input_path, output_path)
+            print("Build successful.")
+            print(f"CV name: {metadata['name']}")
+            print(f"Markdown input: {input_path}")
+            print(f"PDF output: {output_path}")
+            return 0
+
         markdown = resolve_markdown_with_metadata(
             read_input_markdown(config.input_path, config.example_input_path),
             config.metadata_path,
