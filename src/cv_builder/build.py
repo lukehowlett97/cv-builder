@@ -220,3 +220,35 @@ def build_cv_from_content(
 def build_cv(config: BuildConfig, output_name: str | None, dry_run: bool = False) -> BuildResult:
     markdown = read_input_markdown(config.input_path, config.example_input_path)
     return build_cv_from_content(config, markdown, output_name, dry_run=dry_run)
+
+
+def build_pdf_from_file(config: BuildConfig, input_path: Path, output_path: Path) -> dict[str, str]:
+    """Validate and render one Markdown CV without creating a run snapshot."""
+    if not input_path.is_file():
+        raise RenderError(f"Input file not found: {input_path}")
+
+    markdown = input_path.read_text(encoding="utf-8")
+    if not markdown.strip():
+        raise RenderError(f"Input file is empty: {input_path}")
+
+    metadata = validate_markdown_contract(markdown)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with tempfile.NamedTemporaryFile(
+        dir=output_path.parent,
+        prefix=f".{output_path.stem}-",
+        suffix=".pdf",
+        delete=False,
+    ) as temp_file:
+        temp_output = Path(temp_file.name)
+    temp_output.unlink()
+
+    try:
+        paths = RenderPaths(input_path, temp_output, config.template_path)
+        ensure_dependencies(paths)
+        render_pdf(paths)
+        temp_output.replace(output_path)
+    finally:
+        temp_output.unlink(missing_ok=True)
+
+    return metadata
