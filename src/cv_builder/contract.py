@@ -7,6 +7,7 @@ from cv_builder.render import RenderError
 
 
 FRONTMATTER_KEY_PATTERN = re.compile(r"^([A-Za-z0-9_-]+)\s*:\s*(.+?)\s*$")
+PLAIN_EMAIL_PATTERN = re.compile(r"^[^\s@<>()[\]\\]+@[^\s@<>()[\]\\]+$")
 SECTION_PATTERN = re.compile(r"^\s*##\s+(.+?)\s*$", re.MULTILINE)
 
 REQUIRED_METADATA = ("name", "headline", "location", "email")
@@ -109,6 +110,11 @@ def validate_markdown_contract(markdown: str) -> dict[str, str]:
     missing = [field for field in REQUIRED_METADATA if not metadata.get(field)]
     if missing:
         raise RenderError(f"Missing required frontmatter field(s): {', '.join(missing)}")
+
+    if not PLAIN_EMAIL_PATTERN.fullmatch(metadata["email"]):
+        raise RenderError(
+            "Invalid email frontmatter: use a plain email address, not a Markdown or mailto link"
+        )
 
     if not body.strip():
         raise RenderError("CV body is empty after frontmatter")

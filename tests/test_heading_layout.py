@@ -203,6 +203,18 @@ class HeadingFilterStructureTests(unittest.TestCase):
         ):
             validate_markdown_contract(source)
 
+    def test_markdown_email_metadata_is_rejected(self) -> None:
+        source = (FIXTURES / "heading-structures.md").read_text(encoding="utf-8")
+        source = source.replace(
+            "email: test@example.com",
+            "email: '[test@example.com](mailto:test@example.com)'",
+        )
+        with self.assertRaisesRegex(
+            RenderError,
+            "Invalid email frontmatter: use a plain email address",
+        ):
+            validate_markdown_contract(source)
+
     def test_core_capabilities_filter_still_wraps_content(self) -> None:
         latex = pandoc_latex(FIXTURES / "links-and-core.md")
         self.assertIn("\\begin{multicols}{2}", latex)

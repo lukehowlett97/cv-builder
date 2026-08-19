@@ -121,9 +121,39 @@ def _preview_url(run_dir: Path, file_path: Path) -> str:
     return f"/api/preview/{urllib.parse.quote(run_dir.name)}/{urllib.parse.quote(file_path.name)}"
 
 
+def _running_under_wsl() -> bool:
+    """Return whether this process is running inside Windows Subsystem for Linux."""
+    if os.environ.get("WSL_INTEROP"):
+        return True
+    try:
+        return "microsoft" in Path("/proc/version").read_text(encoding="utf-8").lower()
+    except OSError:
+        return False
+
+
 def _open_in_file_manager(path: Path) -> None:
     if os.name == "nt":
         subprocess.Popen(["explorer", str(path)])
+    elif _running_under_wsl():
+        explorer = shutil.which("explorer.exe")
+        if explorer is None:
+            explorer_path = Path("/mnt/c/Windows/explorer.exe")
+            explorer = str(explorer_path) if explorer_path.exists() else None
+        if explorer is None:
+            subprocess.Popen(["xdg-open", str(path)])
+            return
+        try:
+            windows_path = subprocess.check_output(
+                ["wslpath", "-w", str(path)],
+                text=True,
+                stderr=subprocess.DEVNULL,
+            ).strip()
+        except (OSError, subprocess.CalledProcessError):
+            windows_path = ""
+        if windows_path:
+            subprocess.Popen([explorer, windows_path], cwd="/mnt/c/Windows")
+        else:
+            subprocess.Popen(["xdg-open", str(path)])
     elif sys.platform == "darwin":
         subprocess.Popen(["open", str(path)])
     else:
@@ -377,7 +407,7 @@ class CvBuilderHandler(BaseHTTPRequestHandler):
         _json_response(self, 200, {"runs": runs})
 
 
-def create_server(config: BuildConfig | None = None, host: str = "127.0.0.1", port: int = 8000) -> ThreadingHTTPServer:
+def create_server(config: BuildConfig | None = None, host: str = "127.0.0.1", port: int = 8007) -> ThreadingHTTPServer:
     resolved_config = config or default_config(Path.cwd())
     handler = type(
         "BoundCvBuilderHandler",
@@ -392,7 +422,7 @@ def main(argv: list[str] | None = None) -> int:
 
     parser = argparse.ArgumentParser(description="Start the local CV builder web frontend.")
     parser.add_argument("--host", default="127.0.0.1", help="Bind address (default: 127.0.0.1)")
-    parser.add_argument("--port", type=int, default=8000, help="Bind port (default: 8000)")
+    parser.add_argument("--port", type=int, default=8007, help="Bind port (default: 8007)")
     parser.add_argument(
         "--project-root",
         type=Path,
