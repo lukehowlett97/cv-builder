@@ -129,7 +129,7 @@ Example on Ubuntu/Debian:
 
 ```bash
 sudo apt update
-sudo apt install python3 pandoc texlive-xetex texlive-latex-extra texlive-fonts-recommended
+sudo apt install python3 pandoc fonts-texgyre texlive-xetex texlive-latex-extra texlive-fonts-recommended
 ```
 
 ## Template

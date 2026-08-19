@@ -34,3 +34,5 @@ Data engineer experienced in building reliable Python and SQL workflows, validat
 
 **BSc Mathematics**  
 Example University, 2020–2023
+
+<!-- Automation workflow fixture; safe to remove with this directory. -->
