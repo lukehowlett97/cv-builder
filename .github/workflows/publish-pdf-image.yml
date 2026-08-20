@@ -120,6 +120,13 @@ jobs:
           provenance: mode=max
           sbom: true
 
+      - name: Make package public
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          gh api --method PATCH /user/packages/container/cv-builder-pdf -f visibility=public
+
       - name: Report immutable image reference
         shell: bash
         run: echo "${IMAGE_NAME}@${{ steps.publish.outputs.digest }}"
