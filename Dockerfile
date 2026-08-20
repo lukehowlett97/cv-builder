@@ -16,6 +16,7 @@ RUN apt-get update \
         ca-certificates \
         git \
         make \
+        mupdf-tools \
         pandoc \
         texlive-fonts-recommended \
         texlive-latex-extra \
