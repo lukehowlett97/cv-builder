@@ -1,0 +1,125 @@
+name: Publish PDF toolchain image
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - ".github/workflows/publish-pdf-image.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: ghcr.io/lukehowlett97/cv-builder-pdf
+
+jobs:
+  build-test-publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - name: Build validation image
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: ./Dockerfile
+          load: true
+          platforms: linux/amd64
+          tags: cv-builder-pdf:validation
+          cache-from: type=gha,scope=cv-builder-pdf
+          cache-to: type=gha,mode=max,scope=cv-builder-pdf
+
+      - name: Verify toolchain, tests and PDF rendering
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          docker run --rm cv-builder-pdf:validation bash -lc '
+            set -euo pipefail
+            python3 --version
+            pandoc --version | head -n 1
+            xelatex --version | head -n 1
+            git --version
+          '
+
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/workspace:ro" \
+            --workdir /workspace \
+            cv-builder-pdf:validation \
+            bash -lc 'PYTHONPATH=src python3 -m unittest discover -s tests -v'
+
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/workspace:ro" \
+            --workdir /workspace \
+            cv-builder-pdf:validation \
+            bash -lc '
+              set -euo pipefail
+              output="$(mktemp --suffix=.pdf)"
+              PYTHONPATH=src python3 -m cv_builder \
+                --project-root /workspace \
+                --input /workspace/example_input.md \
+                --output "$output"
+              python3 - "$output" <<'"'"'PY'"'"'
+          from pathlib import Path
+          import sys
+
+          pdf = Path(sys.argv[1])
+          content = pdf.read_bytes()
+          if len(content) < 1024:
+              raise SystemExit(f"PDF is unexpectedly small: {len(content)} bytes")
+          if not content.startswith(b"%PDF-"):
+              raise SystemExit("Output does not have a PDF header")
+          if b"%%EOF" not in content[-2048:]:
+              raise SystemExit("Output does not have a PDF EOF marker")
+          print(f"Validated PDF: {len(content)} bytes")
+          PY
+            '
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Select image tags
+        id: tags
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "tags<<EOF"
+            echo "${IMAGE_NAME}:sha-${GITHUB_SHA}"
+            if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
+              echo "${IMAGE_NAME}:latest"
+            fi
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Publish image
+        id: publish
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: ${{ steps.tags.outputs.tags }}
+          cache-from: type=gha,scope=cv-builder-pdf
+          provenance: mode=max
+          sbom: true
+
+      - name: Report immutable image reference
+        shell: bash
+        run: echo "${IMAGE_NAME}@${{ steps.publish.outputs.digest }}"

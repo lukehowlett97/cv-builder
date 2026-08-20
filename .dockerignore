@@ -1,0 +1,5 @@
+# The image is a generic toolchain and must never receive repository content.
+**
+
+!Dockerfile
+!.dockerignore
